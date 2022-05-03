@@ -12,10 +12,19 @@ import os
 import pydub
 
 
-for file in glob.glob('*.mp3'):
-	#print(file)
-	sound = pydub.AudioSegment.from_mp3(file)
-	#print(sound)
-	new_file = os.path.splitext(f'{file}')[0]
-	#print(new_file)
-	sound.export(f'converted/{new_file}.wav', format='wav', bitrate=16000)
+def main():
+	for file in glob.glob('*.mp3'):
+		#print(file)
+
+		file_name = os.path.splitext(f'{file}')[0]
+
+		if os.path.isfile(f'converted/{file_name}.wav'):
+			continue
+
+		sound = pydub.AudioSegment.from_mp3(file)
+		#print(sound)
+
+		sound.export(f'converted/{file_name}.wav', format='wav', bitrate=16000)
+		
+if __name__ == '__main__':
+	main()
