@@ -1,3 +1,11 @@
+'''
+Written by Alireza Rashidi.
+Python 3.8.x.
+This file does prediction with the model, “wav2vec2-large-xlsr-53”, on Mozilla Common Voice dataset for Persian language,
+mainly with PyTorch and HuggingFace packages.
+'''
+
+
 import numpy as np
 import pandas as pd
 import librosa
