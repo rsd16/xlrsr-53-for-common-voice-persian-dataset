@@ -1,3 +1,10 @@
+'''
+Written by Alireza Rashidi.
+Python 3.8.x.
+This file fine-tunes the model, “wav2vec2-large-xlsr-53”, with the 5-gram setting on Mozilla Common Voice dataset for
+Persian language, mainly with PyTorch and HuggingFace packages.
+'''
+
 
 ################################################################################################################
 # Section 1: Our imports.
@@ -122,7 +129,7 @@ print(train['sentence'])
 train = train.reset_index(drop=True)
 print(train.head())
 
-train = train[['path', 'sentence']][:50]
+train = train[['path', 'sentence']]
 train.to_csv('new_train.csv', sep='\t', encoding='utf-8', index=False)
 
 dev = pd.read_csv(f'{data_dir}/dev.tsv', sep='\t')
@@ -142,7 +149,7 @@ print(dev['sentence'])
 dev = dev.reset_index(drop=True)
 print(dev.head())
 
-dev = dev[['path', 'sentence']][:50]
+dev = dev[['path', 'sentence']]
 dev.to_csv('new_dev.csv', sep='\t', encoding='utf-8', index=False)
 
 test = pd.read_csv(f'{data_dir}/test.tsv', sep='\t')
@@ -162,7 +169,7 @@ print(test['sentence'])
 test = test.reset_index(drop=True)
 print(test.head())
 
-test = test[['path', 'sentence']][:50]
+test = test[['path', 'sentence']]
 test.to_csv('new_test.csv', sep='\t', encoding='utf-8', index=False)
 
 ################################################################################################################
