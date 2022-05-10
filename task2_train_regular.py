@@ -1,6 +1,13 @@
+'''
+Written by Alireza Rashidi.
+Python 3.8.x.
+This file fine-tunes the model, “wav2vec2-large-xlsr-53”, on Mozilla Common Voice dataset for Persian language,
+mainly with PyTorch and HuggingFace packages.
+'''
+
 
 ################################################################################################################
-# Section 1: Our imports.
+# Sub-Section 1: Our imports.
 
 import os
 import re
@@ -22,7 +29,7 @@ from dataclasses import dataclass
 
 
 ################################################################################################################
-# Section 2: Necessary functions we will call throughout the *.py file.
+# Sub-Section 2: Necessary functions we will call throughout the *.py file.
 
 def multiple_replace(text, chars_to_mapping):
     pattern = '|'.join(map(re.escape, chars_to_mapping.keys()))
@@ -33,7 +40,7 @@ def remove_special_characters(text, chars_to_ignore_regex):
     return text
 
 ################################################################################################################
-# Section 3: Some constant or necessary variables.
+# Sub-Section 3: Some constant or necessary variables.
 
 _normalizer = hazm.Normalizer()
 
@@ -76,7 +83,7 @@ if os.path.exists(save_dir):
     last_checkpoint = get_last_checkpoint(save_dir)
 
 ################################################################################################################
-# Section 4: Initial preprocessing of the sentences and *.tsv files.
+# Sub-Section 4: Initial preprocessing of the sentences and *.tsv files.
 
 def normalizer_initial_level(text, chars_to_ignore=chars_to_ignore, chars_to_mapping=chars_to_mapping):
     chars_to_ignore_regex = f"""[{''.join(chars_to_ignore)}]"""
@@ -166,7 +173,7 @@ test = test[['path', 'sentence']][:50]
 test.to_csv('new_test.csv', sep='\t', encoding='utf-8', index=False)
 
 ################################################################################################################
-# Section 5: Read, preprocess and extract vocab from sentences.
+# Sub-Section 5: Read, preprocess and extract vocab from sentences.
 
 def show_random_elements(dataset, num_examples=10):
     assert num_examples <= len(dataset), 'Can\'t pick more elements than there are in the dataset.'
@@ -262,7 +269,7 @@ with open('vocab.json', 'w') as vocab_file:
 	json.dump(vocab_dict, vocab_file)
 
 ################################################################################################################
-# Section 6: Loading methods and variables needed for Wav2Vec2 to run.
+# Sub-Section 6: Loading methods and variables needed for Wav2Vec2 to run.
 
 tokenizer = Wav2Vec2CTCTokenizer('vocab.json', bos_token='<s>', eos_token='</s>', unk_token='<unk>', pad_token='<pad>', word_delimiter_token='|', do_lower_case=False, max_length=32)
 
@@ -283,7 +290,7 @@ if not os.path.exists(save_dir):
     print('Saved!')
 
 ################################################################################################################
-# Section 7: Getting to know the audio and preprocessing it a little bit. At the end, preparing the data for training.
+# Sub-Section 7: Getting to know the audio and preprocessing it a little bit. At the end, preparing the data for training.
 
 target_sampling_rate = 16_000
 
@@ -341,7 +348,7 @@ _common_voice_dev.set_format(type='torch', columns=['input_values', 'labels'])
 _common_voice_test.set_format(type='torch', columns=['input_values', 'labels'])
 
 ###############################################################################################################
-# Section 8: Actual training
+# Sub-Section 8: Actual training
 
 
 @dataclass
