@@ -41,9 +41,9 @@ def predict(batch):
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-processor = Wav2Vec2Processor.from_pretrained('m3hrdadfi/wav2vec2-large-xlsr-persian-v3')
+processor = Wav2Vec2Processor.from_pretrained('ahabahab8/wav2vec2-large-xlsr-53-fine-tuned-farsi')
 
-model = Wav2Vec2ForCTC.from_pretrained('m3hrdadfi/wav2vec2-large-xlsr-persian-v3').to(device)
+model = Wav2Vec2ForCTC.from_pretrained('ahabahab8/wav2vec2-large-xlsr-53-fine-tuned-farsi').to(device)
 
 dataset = load_dataset('csv', data_files={'test': 'new_test.csv'}, delimiter='\t')['test']
 dataset = dataset.map(speech_file_to_array_fn)
