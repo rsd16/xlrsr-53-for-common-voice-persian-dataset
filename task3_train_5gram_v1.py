@@ -7,7 +7,7 @@ Persian language, mainly with PyTorch and HuggingFace packages.
 
 
 ################################################################################################################
-# Section 1: Our imports.
+# Sub-Section 1: Our imports.
 
 import os
 import re
@@ -29,7 +29,7 @@ from dataclasses import dataclass
 
 
 ################################################################################################################
-# Section 2: Necessary functions we will call throughout the *.py file.
+# Sub-Section 2: Necessary functions we will call throughout the *.py file.
 
 def multiple_replace(text, chars_to_mapping):
     pattern = '|'.join(map(re.escape, chars_to_mapping.keys()))
@@ -40,7 +40,7 @@ def remove_special_characters(text, chars_to_ignore_regex):
     return text
 
 ################################################################################################################
-# Section 3: Some constant or necessary variables.
+# Sub-Section 3: Some constant or necessary variables.
 
 _normalizer = hazm.Normalizer()
 
@@ -52,6 +52,9 @@ chars_to_ignore = [
 #     "ء",
 ]
 
+# In case of farsi
+chars_to_ignore = chars_to_ignore + list(string.ascii_lowercase + string.digits)
+
 chars_to_mapping = {
     'ك': 'ک', 'دِ': 'د', 'بِ': 'ب', 'زِ': 'ز', 'ذِ': 'ذ', 'شِ': 'ش', 'سِ': 'س', 'ى': 'ی',
     'ي': 'ی', 'أ': 'ا', 'ؤ': 'و', "ے": "ی", "ۀ": "ه", "ﭘ": "پ", "ﮐ": "ک", "ﯽ": "ی",
@@ -59,8 +62,9 @@ chars_to_mapping = {
     "ﻟ": "ل", "ﻡ": "م", "ﻢ": "م", "ﻪ": "ه", "ﻮ": "و", 'ﺍ': "ا", 'ة': "ه",
     'ﯾ': "ی", 'ﯿ': "ی", 'ﺒ': "ب", 'ﺖ': "ت", 'ﺪ': "د", 'ﺮ': "ر", 'ﺴ': "س", 'ﺷ': "ش",
     'ﺸ': "ش", 'ﻋ': "ع", 'ﻤ': "م", 'ﻥ': "ن", 'ﻧ': "ن", 'ﻭ': "و", 'ﺭ': "ر", "ﮔ": "گ",
+    'آ': 'ا',
         
-    # "ها": "  ها", "ئ": "ی",
+    "ها": "  ها", "ئ": "ی",
     "۱۴ام": "۱۴ ام",
         
     "a": " ای ", "b": " بی ", "c": " سی ", "d": " دی ", "e": " ایی ", "f": " اف ",
@@ -73,6 +77,7 @@ chars_to_mapping = {
 
 chars_to_ignore = chars_to_ignore + list(string.ascii_lowercase + string.digits)
 
+
 data_dir = 'cv-corpus-9.0-2022-04-27/fa'
 
 save_dir = 'model checkpoints/'
@@ -83,7 +88,7 @@ if os.path.exists(save_dir):
     last_checkpoint = get_last_checkpoint(save_dir)
 
 ################################################################################################################
-# Section 4: Initial preprocessing of the sentences and *.tsv files.
+# Sub-Section 4: Initial preprocessing of the sentences and *.tsv files.
 
 def normalizer_initial_level(text, chars_to_ignore=chars_to_ignore, chars_to_mapping=chars_to_mapping):
     chars_to_ignore_regex = f"""[{''.join(chars_to_ignore)}]"""
@@ -173,7 +178,7 @@ test = test[['path', 'sentence']]
 test.to_csv('new_test.csv', sep='\t', encoding='utf-8', index=False)
 
 ################################################################################################################
-# Section 5: Read, preprocess and extract vocab from sentences.
+# Sub-Section 5: Read, preprocess and extract vocab from sentences.
 
 def show_random_elements(dataset, num_examples=10):
     assert num_examples <= len(dataset), 'Can\'t pick more elements than there are in the dataset.'
@@ -194,12 +199,14 @@ def normalizer_main(batch, chars_to_ignore=chars_to_ignore, chars_to_mapping=cha
     chars_to_ignore_regex = f"""[{''.join(chars_to_ignore)}]"""
 
     text = batch['sentence'].lower().strip()
-
     text = _normalizer.normalize(text)
     text = multiple_replace(text, chars_to_mapping)
     text = remove_special_characters(text, chars_to_ignore_regex)
     text = re.sub(' +', ' ', text)
-
+    text = text.replace('آ', 'ا')
+    text = text.replace('ئ', 'ی')
+    text = text.replace('ء', '')
+    
     _text = []
 
     for word in text.split():
@@ -215,7 +222,7 @@ def normalizer_main(batch, chars_to_ignore=chars_to_ignore, chars_to_mapping=cha
     if not len(text) > 0:
         return None
     
-    batch['sentence'] = text
+    batch['sentence'] = text + ' '
     
     return batch
 
@@ -224,38 +231,34 @@ def extract_all_chars(batch):
     vocab = list(set(all_text))
     return {'vocab': [vocab], 'all_text': [all_text]}
 
-common_voice_train = load_dataset('csv', data_files={'train': 'new_train.csv'}, delimiter='\t')['train']
-common_voice_dev = load_dataset('csv', data_files={'dev': 'new_dev.csv'}, delimiter='\t')['dev']
-common_voice_test = load_dataset('csv', data_files={'test': 'new_test.csv'}, delimiter='\t')['test']
-
 print(common_voice_train)
-print(common_voice_dev)
+##print(common_voice_dev)
 print(common_voice_test)
 
 show_random_elements(common_voice_train.remove_columns(['path']), num_examples=20)
 
 print(common_voice_train[0]['sentence'])
-print(common_voice_dev[0]['sentence'])
+##print(common_voice_dev[0]['sentence'])
 print(common_voice_test[0]['sentence'])
 
 common_voice_train = common_voice_train.map(normalizer_main, fn_kwargs={'chars_to_ignore': chars_to_ignore, 'chars_to_mapping': chars_to_mapping})
-common_voice_dev = common_voice_dev.map(normalizer_main, fn_kwargs={'chars_to_ignore': chars_to_ignore, 'chars_to_mapping': chars_to_mapping})
+##common_voice_dev = common_voice_dev.map(normalizer_main, fn_kwargs={'chars_to_ignore': chars_to_ignore, 'chars_to_mapping': chars_to_mapping})
 common_voice_test = common_voice_test.map(normalizer_main, fn_kwargs={'chars_to_ignore': chars_to_ignore, 'chars_to_mapping': chars_to_mapping})
 
 print(common_voice_train[0]['sentence'])
-print(common_voice_dev[0]['sentence'])
+##print(common_voice_dev[0]['sentence'])
 print(common_voice_test[0]['sentence'])
 
-vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size=4, keep_in_memory=True, remove_columns=common_voice_train.column_names)
-vocab_dev = common_voice_dev.map(extract_all_chars, batched=True, batch_size=4, keep_in_memory=True, remove_columns=common_voice_train.column_names)
-vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=4, keep_in_memory=True, remove_columns=common_voice_test.column_names)
+vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_train.column_names)
+##vocab_dev = common_voice_dev.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_train.column_names)
+vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
 
-vocab_list = list(sorted(set(vocab_train['vocab'][0]) | set(vocab_dev['vocab'][0]) | set(vocab_test['vocab'][0])))
+vocab_list = list(sorted(set(vocab_train['vocab'][0]) | set(vocab_test['vocab'][0])))
 vocab_list = [vocab for vocab in vocab_list if vocab not in [' ', '\u0307']]
 print(len(vocab_list))
 print(vocab_list)
 
-vocab_list = list(sorted(set(vocab_train['vocab'][0]) | set(vocab_dev['vocab'][0]) | set(vocab_test['vocab'][0])))
+vocab_list = list(sorted(set(vocab_train['vocab'][0]) | set(vocab_test['vocab'][0])))
 vocab_list = [vocab for vocab in vocab_list if vocab not in [' ', '\u0307']]
 print(len(vocab_list))
 print(vocab_list)
@@ -269,7 +272,7 @@ with open('vocab.json', 'w') as vocab_file:
     json.dump(vocab_dict, vocab_file)
 
 ################################################################################################################
-# Section 6: Loading methods and variables needed for Wav2Vec2 to run.
+# Sub-Section 6: Loading methods and variables needed for Wav2Vec2 to run.
 
 tokenizer = Wav2Vec2CTCTokenizer('vocab.json', bos_token='<s>', eos_token='</s>', unk_token='<unk>', pad_token='<pad>', word_delimiter_token='|', do_lower_case=False, max_length=32)
 
@@ -284,13 +287,8 @@ print(tokenizer.decode(tokenizer.encode(text)))
 if len(processor.tokenizer.get_vocab()) == len(processor.tokenizer):
     print(len(processor.tokenizer))
 
-if not os.path.exists(save_dir):
-    print('Saving...')
-    processor.save_pretrained(save_dir)
-    print('Saved!')
-
 ################################################################################################################
-# Section 7: Getting to know the audio and preprocessing it a little bit. At the end, preparing the data for training.
+# Sub-Section 7: Getting to know the audio and preprocessing it a little bit. At the end, preparing the data for training.
 
 target_sampling_rate = 16_000
 
@@ -324,7 +322,7 @@ def prepare_dataset(batch):
     return batch
 
 common_voice_train = common_voice_train.map(speech_file_to_array_fn, remove_columns=common_voice_train.column_names)
-common_voice_dev = common_voice_dev.map(speech_file_to_array_fn, remove_columns=common_voice_dev.column_names)
+##common_voice_dev = common_voice_dev.map(speech_file_to_array_fn, remove_columns=common_voice_dev.column_names)
 common_voice_test = common_voice_test.map(speech_file_to_array_fn, remove_columns=common_voice_test.column_names)
 
 print(common_voice_train[0]['sampling_rate'])
@@ -333,22 +331,22 @@ print(common_voice_test[0]['sampling_rate'])
 print(f'Split sizes [BEFORE]: {len(common_voice_train)} train and {len(common_voice_test)} validation.')
 
 _common_voice_train = common_voice_train.filter(filter_by_max_duration)
-_common_voice_dev = common_voice_dev
-_common_voice_test = common_voice_test
-#_common_voice_test = common_voice_test.filter(filter_by_max_duration)
+##_common_voice_dev = common_voice_dev
+##_common_voice_test = common_voice_test
+_common_voice_test = common_voice_test.filter(filter_by_max_duration)
 
 print(f'Split sizes [AFTER]: {len(_common_voice_train)} train and {len(_common_voice_test)} validation.')
 
-_common_voice_train = _common_voice_train.map(prepare_dataset, remove_columns=_common_voice_train.column_names, batch_size=4, batched=True)
-_common_voice_dev = _common_voice_dev.map(prepare_dataset, remove_columns=_common_voice_dev.column_names, batch_size=4, batched=True)
-_common_voice_test = _common_voice_test.map(prepare_dataset, remove_columns=_common_voice_test.column_names, batch_size=4, batched=True)
+_common_voice_train = _common_voice_train.map(prepare_dataset, remove_columns=_common_voice_train.column_names, batch_size=8, batched=True)
+##_common_voice_dev = _common_voice_dev.map(prepare_dataset, remove_columns=_common_voice_dev.column_names, batch_size=8, batched=True)
+_common_voice_test = _common_voice_test.map(prepare_dataset, remove_columns=_common_voice_test.column_names, batch_size=8, batched=True)
 
 _common_voice_train.set_format(type='torch', columns=['input_values', 'labels'])
-_common_voice_dev.set_format(type='torch', columns=['input_values', 'labels'])
+##_common_voice_dev.set_format(type='torch', columns=['input_values', 'labels'])
 _common_voice_test.set_format(type='torch', columns=['input_values', 'labels'])
 
 ###############################################################################################################
-# Section 8: Actual training
+# Sub-Section 8: Actual training
 
 
 @dataclass
@@ -402,24 +400,30 @@ data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
 
 wer_metric = load_metric('wer')
 
-configuration = Wav2Vec2Config(hidden_size=256, num_hidden_layers=6, num_attention_heads=6, intermediate_size=1024)
+##configuration = Wav2Vec2Config(hidden_size=256, num_hidden_layers=6, num_attention_heads=6, intermediate_size=1024)
 
-model_args ={}
+##model_args ={}
 
 print(len(processor.tokenizer.get_vocab()))
 
 model = Wav2Vec2ForCTC.from_pretrained('facebook/wav2vec2-large-xlsr-53', attention_dropout=0.1, hidden_dropout=0.1, feat_proj_dropout=0.0,
                                        mask_time_prob=0.05, layerdrop=0.1, gradient_checkpointing=True, ctc_loss_reduction='mean', 
                                        ctc_zero_infinity=True, bos_token_id=processor.tokenizer.bos_token_id, eos_token_id=processor.tokenizer.eos_token_id,
-                                       pad_token_id=processor.tokenizer.pad_token_id, vocab_size=len(processor.tokenizer.get_vocab()),
+                                       pad_token_id=processor.tokenizer.pad_token_id, vocab_size=len(processor.tokenizer.get_vocab())
                                        no_repeat_ngram_size=5) # 5-gram language model
 
-model.config = configuration
+##model.config = configuration
 
 model.freeze_feature_extractor()
 
-training_args = TrainingArguments(output_dir=save_dir, group_by_length=True, per_device_train_batch_size=4, per_device_eval_batch_size=4,
-                                  gradient_accumulation_steps=2, evaluation_strategy='steps', num_train_epochs=0.5, learning_rate=1e-4, no_cuda=True) #fp16=True,
+##torch.cuda.empty_cache()
+
+model.to(torch.device('cuda'))
+
+training_args = TrainingArguments(output_dir='/content/drive/MyDrive', group_by_length=True, per_device_train_batch_size=10, per_device_eval_batch_size=10,
+                                  save_strategy='no', eval_steps=10, gradient_accumulation_steps=2, evaluation_strategy='steps', num_train_epochs=0.5,
+                                  learning_rate=1e-4, no_cuda=False, fp16=True, logging_steps=10, warmup_steps=500, save_total_limit=1,)
+                                  #load_best_model_at_end=True), save_steps=10,
 
 trainer = Trainer(model=model, data_collator=data_collator, args=training_args, compute_metrics=compute_metrics, train_dataset=_common_voice_train, eval_dataset=_common_voice_test, tokenizer=processor.feature_extractor)
 
@@ -429,8 +433,12 @@ metrics = train_result.metrics
 max_train_samples = len(_common_voice_train)
 metrics['train_samples'] = min(max_train_samples, len(_common_voice_train))
 
-#trainer.save_model()
+trainer.save_model()
 
 trainer.log_metrics('train', metrics)
 trainer.save_metrics('train', metrics)
 trainer.save_state()
+
+##trainer.log_metrics('test', metrics)
+##trainer.save_metrics('test', metrics)
+##trainer.save_state()
